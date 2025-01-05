@@ -1,7 +1,13 @@
-from sqlalchemy import Column, Float, Integer, Text, ForeignKey, DateTime, JSON
+# General libraries for DB
+from sqlalchemy import Column, Float, Integer, Text, JSON, DateTime, ForeignKey, Boolean
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
+# Complementary Resources
+import uuid
+import logging
+from datetime import datetime
 
 # ORM model Base Class
 Base = declarative_base()
@@ -11,8 +17,10 @@ class App(Base):
     __tablename__ = 'app'
     __table_args__ = {'schema': 'operations'}
 
-    app_code = Column(Text, primary_key=True)
+    app_code = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     app_name = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
     pipelines = relationship('Pipeline', back_populates='apps')
     jobs = relationship('Job', back_populates='apps')
@@ -20,7 +28,9 @@ class App(Base):
     def to_dict(self):
         return {
             'app_code': self.app_code,
-            'app_name': self.app_name
+            'app_name': self.app_name,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
         }
 
     @classmethod
@@ -30,19 +40,42 @@ class App(Base):
             app_name=data.get('app_name')
         )
 
+class PipelineDomain(Base):
+    __tablename__ = 'pipeline_domain'
+    __table_args__ = {'schema': 'operations'}
+
+    pipeline_domain_code = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pipeline_domain_name = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+    pipelines = relationship('Pipeline', back_populates='pipeline_domains')
+
+    def to_dict(self):
+        return {
+            'pipeline_domain_code': self.pipeline_domain_code,
+            'pipeline_domain_name': self.pipeline_domain_name,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
+        }
+
+
 class Pipeline(Base):
     __tablename__ = 'pipeline'
     __table_args__ = {'schema': 'operations'}
 
-    pipeline_code = Column(Text, primary_key=True)
+    pipeline_code = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     pipeline_name = Column(Text, nullable=False)
-    pipeline_domain_code = Column(Text, nullable=False)
-    pipeline_domain_name = Column(Text, nullable=False)
-    app_code = Column(Text, ForeignKey('operations.app.app_code'), nullable=False)
+    pipeline_domain_code = Column(UUID, ForeignKey('operations.pipeline_domain.pipeline_domain_code') ,
+                                  nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    app_code = Column(UUID, ForeignKey('operations.app.app_code'), nullable=False)
 
     apps = relationship('App', back_populates='pipelines')
     tasks = relationship('Task', back_populates='pipelines')
     sources = relationship('Source', back_populates='pipelines')
+    pipeline_domains = relationship('PipelineDomain', back_populates='pipelines')
 
     def to_dict(self):
         return {
@@ -50,7 +83,9 @@ class Pipeline(Base):
             'pipeline_domain_code': self.pipeline_domain_code,
             'pipeline_domain_name': self.pipeline_domain_name,
             'pipeline_code': self.pipeline_code,
-            'pipeline_name': self.pipeline_name
+            'pipeline_name': self.pipeline_name,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
         }
 
     @classmethod
@@ -68,7 +103,7 @@ class Source(Base):
     __tablename__ = 'source'
     __table_args__ = {'schema': 'operations'}
 
-    source_code = Column(Text, primary_key=True)
+    source_code = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source_name = Column(Text, nullable=False)
     location_type = Column(Text, nullable=False)
     location = Column(Text, nullable=True) # URL
@@ -78,7 +113,10 @@ class Source(Base):
     params = Column(JSON, nullable=True)
     headers = Column(JSON, nullable=True)
     timeout = Column(Float, nullable=True)
-    pipeline_code = Column(Text, ForeignKey('operations.pipeline.pipeline_code'), nullable=False)
+    pipeline_code = Column(UUID, ForeignKey('operations.pipeline.pipeline_code'), nullable=False)
+    active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
     pipelines = relationship('Pipeline', back_populates='sources')
     tasks = relationship('Task', back_populates='sources')
@@ -95,7 +133,10 @@ class Source(Base):
             'params': self.params,
             'headers': self.headers,
             'timeout': self.timeout,
-            'pipeline_code': self.pipeline_code
+            'pipeline_code': self.pipeline_code,
+            'active': self.active,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
         }
 
     @classmethod
@@ -118,7 +159,7 @@ class Job(Base):
     __tablename__ = 'job'
     __table_args__ = {'schema': 'operations'}
 
-    job_id = Column(Text, primary_key=True)
+    job_id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(Text, nullable=False)
     memory_usage_start = Column(Float, nullable=False)
     cpu_usage_start = Column(Float, nullable=False)
@@ -135,7 +176,7 @@ class Job(Base):
     execution_user = Column(Text, nullable=False)
     process_id = Column(Integer, nullable=False)
     number_of_tasks = Column(Integer, nullable=False)
-    app_code = Column(Text, ForeignKey('operations.app.app_code'), nullable=False)
+    app_code = Column(UUID, ForeignKey('operations.app.app_code'), nullable=False)
 
     apps = relationship('App', back_populates='jobs')
     tasks = relationship('Task', back_populates='jobs')
@@ -189,15 +230,19 @@ class TaskType(Base):
     __tablename__ = 'task_type'
     __table_args__ = {'schema': 'operations'}
 
-    task_type_code = Column(Text, primary_key=True)
+    task_type_code = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     task_type_name = Column(Text, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     tasks = relationship('Task', back_populates='task_types')
 
     def to_dict(self):
         return {
             'task_type_code': self.task_type_code,
-            'task_type_name': self.task_type_name
+            'task_type_name': self.task_type_name,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
         }
 
     @classmethod
@@ -212,9 +257,9 @@ class Task(Base):
     __tablename__ = 'task'
     __table_args__ = {'schema': 'operations'}
 
-    task_id = Column(Text, primary_key=True)
+    task_id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(Text, nullable=False)
-    source_code = Column(Text, ForeignKey('operations.source.source_code'), nullable=False)
+    source_code = Column(UUID, ForeignKey('operations.source.source_code'), nullable=False)
     location = Column(Text, nullable=False)
     memory_usage_start = Column(Float, nullable=False)
     cpu_usage_start = Column(Float, nullable=False)
@@ -231,9 +276,9 @@ class Task(Base):
     records_processed = Column(Integer, nullable=True)
     memory_usage = Column(Float, nullable=True)
     cpu_usage = Column(Float, nullable=True)
-    job_id = Column(Text, ForeignKey('operations.job.job_id'), nullable=False)
-    pipeline_code = Column(Text, ForeignKey('operations.pipeline.pipeline_code'), nullable=False)
-    task_type_code = Column(Text, ForeignKey('operations.task_type.task_type_code'), nullable=False)
+    job_id = Column(UUID, ForeignKey('operations.job.job_id'), nullable=False)
+    pipeline_code = Column(UUID, ForeignKey('operations.pipeline.pipeline_code'), nullable=False)
+    task_type_code = Column(UUID, ForeignKey('operations.task_type.task_type_code'), nullable=False)
 
     jobs = relationship('Job', back_populates='tasks')
     pipelines = relationship('Pipeline', back_populates='tasks')

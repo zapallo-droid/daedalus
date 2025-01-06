@@ -110,16 +110,14 @@ if __name__ == '__main__':
 
     db.db_init()
 
-    #db.records_loader(model=PipelineDomainORM, records=[{'pipeline_domain_name': 'International Labour Organization'}])
-    #db.records_loader(model=PipelineORM, records=[{'pipeline_name': 'International Standard Classification of Occupations (ISCO)',
-    #                                               'pipeline_domain_code': 'bc3c9416-a4e4-4fdf-8018-30db34f26d39',
-    #                                               'app_code': '14a78c7a-4f39-4d7c-9b88-65221be91172'}])
-    #import json
-    #with open('C:/Users/jrab9/OneDrive/08.Github/hephaestus/pipelines/ilostat/isco/config/sources.json') as f:
-    #    data = json.loads(f.read())
+    #db.records_loader(model=AppORM, records=[{'app_name': 'daedalus', 'app_name': 'hephaestus'}])
 
-    #db.records_loader(model=SourceORM, records=data)
+    #db.records_loader(model=TaskTypeORM, records=[{'task_type_code': 'E' , 'task_type_name': 'extract'},
+    #                                              {'task_type_code': 'T' , 'task_type_name': 'transform'},
+    #                                              {'task_type_code': 'L' , 'task_type_name': 'load'}])
 
+    #db.records_loader(model=PipelineDomainORM, records=[{'pipeline_domain_name': 'Parliamentary - Argentina'},
+    #                                                     {'pipeline_domain_name': 'International Labour Organization'}])
 
 
 

@@ -1,8 +1,7 @@
 # General libraries for DB
 from sqlalchemy import Column, Float, Integer, Text, JSON, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, declarative_base
 
 # Complementary Resources
 import uuid
@@ -230,7 +229,7 @@ class TaskType(Base):
     __tablename__ = 'task_type'
     __table_args__ = {'schema': 'operations'}
 
-    task_type_code = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_type_code = Column(Text, primary_key=True)
     task_type_name = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -278,7 +277,7 @@ class Task(Base):
     cpu_usage = Column(Float, nullable=True)
     job_id = Column(UUID, ForeignKey('operations.job.job_id'), nullable=False)
     pipeline_code = Column(UUID, ForeignKey('operations.pipeline.pipeline_code'), nullable=False)
-    task_type_code = Column(UUID, ForeignKey('operations.task_type.task_type_code'), nullable=False)
+    task_type_code = Column(Text, ForeignKey('operations.task_type.task_type_code'), nullable=False)
 
     jobs = relationship('Job', back_populates='tasks')
     pipelines = relationship('Pipeline', back_populates='tasks')
